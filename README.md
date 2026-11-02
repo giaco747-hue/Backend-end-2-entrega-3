@@ -49,8 +49,18 @@ Bash
 npm start
 
 🔌 Endpoints de la API
-1. Registro de Usuario
-Ruta: POST /api/sessions/register
+### 1. Registro de Usuario
+* **Ruta:** `POST /api/sessions/register`
+* **Descripción:** Valida los campos obligatorios, normaliza el correo electrónico, verifica duplicados, hashea la contraseña de forma segura con `bcrypt` y guarda el usuario en la base de datos sin exponer la contraseña en la respuesta.
+
+**Ejemplo de Payload JSON (Body):**
+```json
+{
+  "first_name": "Rodrigo",
+  "last_name": "Pérez",
+  "email": "rodrigo@mail.com",
+  "password": "Secreta123"
+}
 
 Descripción: Valida los campos obligatorios, normaliza el correo electrónico (minúsculas y sin espacios), verifica duplicados, hashea la contraseña de forma segura con bcrypt y guarda el usuario en la base de datos sin exponer la contraseña en la respuesta.
 
@@ -71,6 +81,22 @@ Respuestas esperadas:
 400 Bad Request: Faltan campos obligatorios.
 
 409 Conflict: El correo electrónico ya se encuentra registrado.
+
+500 Internal Server Error: Error interno del servidor.
+
+Comando de Prueba (cURL):
+
+Bash
+curl -X POST http://localhost:3000/api/sessions/register \
+-H "Content-Type: application/json" \
+-d '{"first_name": "Rodrigo", "last_name": "Pérez", "email": "rodrigo@mail.com", "password": "Secreta123"}'
+Respuestas esperadas y casos de prueba:
+
+201 Created: Usuario creado exitosamente (prueba enviando el JSON válido).
+
+400 Bad Request: Faltan campos o el formato del email es inválido (prueba enviando un email sin @).
+
+409 Conflict: El correo ya se encuentra registrado (prueba enviando el mismo comando cURL dos veces).
 
 500 Internal Server Error: Error interno del servidor.
 
