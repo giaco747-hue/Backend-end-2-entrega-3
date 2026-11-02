@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 
-// Convierte la contraseña en texto plano a una cadena hasheada e indecifrable
+
 export const createHash = (password) => {
   return bcrypt.hashSync(password, bcrypt.genSaltSync(10));
 };

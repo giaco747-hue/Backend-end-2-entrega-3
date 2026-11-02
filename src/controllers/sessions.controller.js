@@ -4,24 +4,28 @@ import { createHash, isValidPassword } from '../utils/hash.js'; // <-- Ruta ajus
 // 1. REGISTRO CON BCRYPT
 export const registerUser = async (req, res) => {
   try {
-    const { first_name, last_name, email, password, role } = req.body;
+    const { first_name, last_name, email, password } = req.body;
 
     if (!first_name || !last_name || !email || !password) {
       return res.status(400).json({ status: "error", message: "Faltan campos obligatorios" });
     }
 
-    const existeUsuario = await userModel.findOne({ email });
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return res.status(400).json({ status: "error", message: "Formato de email inválido" });
+    const emailNormalizado = email.trim().toLowerCase();
+
+   const existeUsuario = await userModel.findOne({ email: emailNormalizado });
     if (existeUsuario) {
       return res.status(409).json({ status: "error", message: "El email ya está registrado" });
     }
 
-    // Crear el usuario con la contraseña encriptada
+   
     const newUser = await userModel.create({
       first_name,
       last_name,
-      email,
-      password: createHash(password), // <-- Usando tu utilidad de hash
-      role
+     email: emailNormalizado,
+      password: createHash(password),
+      role: 'user'
     });
 
     const userResponse = newUser.toObject();
@@ -54,7 +58,7 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({ status: "error", message: "Usuario no encontrado" });
     }
 
-    // Comparar la clave ingresada vs el hash de la BD
+    
     if (!isValidPassword(password, user.password)) {
       return res.status(401).json({ status: "error", message: "Contraseña incorrecta" });
     }
