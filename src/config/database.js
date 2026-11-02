@@ -5,7 +5,7 @@ export const connectDB = async () => {
     console.log("⏳ Intentando conectar a MongoDB local...");
     
     
-    await mongoose.connect('mongodb://127.0.0.1:27017/eventos_db');
+   await mongoose.connect(process.env.MONGO_URI);
     
     console.log("🟢 Conexión a MongoDB establecida exitosamente");
   } catch (error) {
