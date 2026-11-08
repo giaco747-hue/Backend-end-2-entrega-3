@@ -1,12 +1,14 @@
 import express from 'express';
 import eventsRouter from './routes/events.routes.js';
 import sessionsRouter from './routes/sessions.routes.js';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 
 // Middlewares para procesar JSON en las peticiones HTTP
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Endpoint de prueba de servidor (Health Check)
 app.get('/api/health', (req, res) => {

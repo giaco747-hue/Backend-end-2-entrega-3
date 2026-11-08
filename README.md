@@ -1,59 +1,29 @@
-# Backend 2 - Segunda Pre-entrega: Registro y Autenticación Segura
+# Proyecto Backend - Coderhouse (Pre-entrega 3)
 
-Este repositorio corresponde a la segunda pre-entrega del curso de Backend en Coderhouse. El proyecto implementa el flujo de registro y autenticación de usuarios para una plataforma, integrando seguridad con **bcrypt**, persistencia de datos con **MongoDB / Mongoose**, y una arquitectura modular basada en capas.
+Backend desarrollado con Node.js, Express y MongoDB, implementando un sistema de autenticación seguro de usuarios mediante JWT (JSON Web Tokens) almacenados en cookies `httpOnly`[cite: 5].
+
+## Tecnologías Utilizadas
+* **Node.js** & **Express**
+* **MongoDB** & **Mongoose** (Base de datos y modelado)
+* **Bcrypt** (Hasheo seguro de contraseñas)[cite: 5]
+* **JSON Web Token (JWT)** & **Cookie-Parser** (Autenticación y manejo de sesión)[cite: 5]
+
+## Configuración y Arranque
+
+1. Clonar el repositorio.
+2. Ejecutar `npm install` para instalar las dependencias.
+3. Crear un archivo `.env` en la raíz del proyecto basándose en las variables de `.env.example`[cite: 4, 5].
+4. Ejecutar el servidor en modo desarrollo con `npm run dev`.
 
 ---
 
-## 🛠️ Tecnologías y Stack Utilizado
-* **Node.js**
-* **Express.js**
-* **MongoDB & Mongoose**
-* **Bcrypt** (para encriptación y validación de contraseñas)
-* **Dotenv** (para gestión de variables de entorno)
+## Documentación de la API (Endpoints)[cite: 4]
 
----
-
-## 📂 Estructura del Proyecto
-El proyecto sigue una arquitectura modular separada por responsabilidades:
-
-```text
-src/
-│
-├── config/         # Configuración de base de datos y conexiones
-├── controllers/    # Lógica de negocio de los endpoints (sessions.controller.js)
-├── models/         # Esquemas de Mongoose (user.model.js)
-├── routes/         # Enrutadores de la API (sessions.router.js)
-├── utils/          # Helpers reutilizables (hash.js para bcrypt)
-└── app.js          # Configuración principal de Express y middlewares
-
-⚙️ Configuración y Variables de Entorno
-Clona este repositorio en tu equipo local.
-
-Instala las dependencias del proyecto ejecutando:
-
-npm install
-
- ** Crea un archivo .env en la raíz del proyecto basándote en el archivo .env.example e incluye las siguientes variables:
-
-PORT=3000
-MONGO_URI=tu_cadena_de_conexion_de_mongodb
-
-🚀 Cómo Ejecutar el Servidor
-Modo Desarrollo (con Nodemon):
-
-npm run dev
-
-Modo Producción:
-
-Bash
-npm start
-
-🔌 Endpoints de la API
 ### 1. Registro de Usuario
 * **Ruta:** `POST /api/sessions/register`
-* **Descripción:** Valida los campos obligatorios, normaliza el correo electrónico, verifica duplicados, hashea la contraseña de forma segura con `bcrypt` y guarda el usuario en la base de datos sin exponer la contraseña en la respuesta.
+* **Descripción:** Valida campos obligatorios, normaliza el email, rechaza duplicados, hashea la contraseña con `bcrypt` y guarda el usuario sin devolver información sensible.
 
-**Ejemplo de Payload JSON (Body):**
+**Ejemplo de Request (Body JSON):**
 ```json
 {
   "first_name": "Rodrigo",
@@ -61,74 +31,26 @@ npm start
   "email": "rodrigo@mail.com",
   "password": "Secreta123"
 }
-
-Descripción: Valida los campos obligatorios, normaliza el correo electrónico (minúsculas y sin espacios), verifica duplicados, hashea la contraseña de forma segura con bcrypt y guarda el usuario en la base de datos sin exponer la contraseña en la respuesta.
-
-Body (JSON de ejemplo):
-
-JSON
-{
-  "first_name": "Rodrigo",
-  "last_name": "Pérez",
-  "email": "rodrigo@mail.com",
-  "password": "Secreta123",
-  "role": "user"
-}
-Respuestas esperadas:
-
-201 Created: Usuario registrado con éxito (devuelve el payload con el ID y datos generales sin contraseña).
-
-400 Bad Request: Faltan campos obligatorios.
-
-409 Conflict: El correo electrónico ya se encuentra registrado.
-
-500 Internal Server Error: Error interno del servidor.
-
-Comando de Prueba (cURL):
-
-Bash
-curl -X POST http://localhost:3000/api/sessions/register \
--H "Content-Type: application/json" \
--d '{"first_name": "Rodrigo", "last_name": "Pérez", "email": "rodrigo@mail.com", "password": "Secreta123"}'
-Respuestas esperadas y casos de prueba:
-
-201 Created: Usuario creado exitosamente (prueba enviando el JSON válido).
-
-400 Bad Request: Faltan campos o el formato del email es inválido (prueba enviando un email sin @).
-
-409 Conflict: El correo ya se encuentra registrado (prueba enviando el mismo comando cURL dos veces).
-
-500 Internal Server Error: Error interno del servidor.
-
-2. Login de Usuario
-Ruta: POST /api/sessions/login
-
-Descripción: Valida las credenciales de acceso comparando la contraseña ingresada con el hash almacenado en la base de datos mediante bcrypt.
-
-Body (JSON de ejemplo):
-
-JSON
-{
+Respuestas:201 Created: Usuario registrado exitosamente.400 Bad Request: Faltan campos o el email tiene formato inválido.409 Conflict: El email ya está registrado.2. Login de UsuarioRuta: POST /api/sessions/loginDescripción: Busca al usuario por email y compara la contraseña. Si coinciden, genera un JWT con el payload { id, email, role } y lo almacena en una cookie currentUser configurada como httpOnly.   Ejemplo de Request (Body JSON):JSON{
   "email": "rodrigo@mail.com",
   "password": "Secreta123"
 }
-Respuestas esperadas:
+Respuestas:200 OK: Login exitoso (Configura la cookie currentUser en el navegador/cliente).   400 Bad Request: Faltan credenciales (email o contraseña).   401 Unauthorized: Credenciales inválidas (mensaje genérico por seguridad).   3. Obtener Usuario Actual (Current)Ruta: GET /api/sessions/currentDescripción: Ruta protegida mediante middleware. Lee la cookie currentUser, verifica y valida el JWT y devuelve el payload del usuario autenticado (sin el password).   Respuestas:200 OK: Devuelve el payload del usuario autenticado.   JSON{
+  "status": "success",
+  "payload": {
+    "id": "6aefc21bf054...",
+    "email": "rodrigo@mail.com",
+    "role": "user",
+    "iat": 1794097769,
+    "exp": 1794101369
+  }
+}
+401 Unauthorized: No autenticado (falta la cookie, token inválido o expirado).   4. Logout de UsuarioRuta: POST /api/sessions/logoutDescripción: Elimina la cookie currentUser del cliente para cerrar la sesión activa[cite: 1, 5].Respuestas:200 OK: Sesión cerrada exitosamente (borra la cookie).   
+Guarda el archivo y ejecuta tu último push para dejar el repositorio listo para la entrega:
 
-200 OK: Login exitoso con mensaje de confirmación y datos de sesión.
+```bash
+git add README.md
+git commit -m "docs: actualizar readme con documentacion completa de rutas auth jwt y cookies"
+git push origin main
 
-401 Unauthorized: Usuario no encontrado o contraseña incorrecta.
-
-500 Internal Server Error: Error interno del servidor.
-
-🧪 Casos de Prueba Recomendados
-Registro Exitoso: Enviar un usuario nuevo con todos los campos requeridos para verificar el código 201.
-
-Validación de Contraseña Hasheada: Consultar la base de datos (MongoDB Compass/Atlas) para comprobar que el campo password se almacena cifrado y nunca en texto plano.
-
-Control de Duplicados: Intentar registrar el mismo correo dos veces para validar la respuesta 409.
-
-Login Seguro: Comprobar que el acceso con las credenciales correctas devuelve un código 200 y que una clave errónea rechaza el acceso con 401.
-
-Autor: Rodrigo — Coderhouse Backend
-
-
+                **** CREADO POR RODRIGO NAVAS GIACOMETTO PARA CODERHOUSE ****

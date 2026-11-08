@@ -1,7 +1,8 @@
 import { userModel } from '../models/user.model.js';
-import { createHash, isValidPassword } from '../utils/hash.js'; // <-- Ruta ajustada a tu carpeta
+import { createHash, isValidPassword } from '../utils/hash.js'; // <-- Ruta ajustada a carpeta
+import { generateToken } from '../utils/jwt.js';
 
-// 1. REGISTRO CON BCRYPT
+//  REGISTRO CON BCRYPT
 export const registerUser = async (req, res) => {
   try {
     const { first_name, last_name, email, password } = req.body;
@@ -43,7 +44,9 @@ export const registerUser = async (req, res) => {
 };
 
 
-// 2. LOGIN CON BCRYPT
+
+
+//  LOGIN DE USUARIO
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -52,30 +55,49 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ status: "error", message: "Faltan credenciales" });
     }
 
-    const user = await userModel.findOne({ email });
-    
-    if (!user) {
-      return res.status(401).json({ status: "error", message: "Usuario no encontrado" });
+    // Buscamos al usuario normalizando el email
+    const user = await userModel.findOne({ email: email.trim().toLowerCase() });
+
+    // Si no existe o la contraseña no coincide, damos un error genérico por seguridad
+    if (!user || !isValidPassword(password, user.password)) {
+      return res.status(401).json({ status: "error", message: "Credenciales inválidas" });
     }
 
-    
-    if (!isValidPassword(password, user.password)) {
-      return res.status(401).json({ status: "error", message: "Contraseña incorrecta" });
-    }
+    // Generamos el JWT usando nuestra utilidad
+    const token = generateToken(user);
 
-    return res.status(200).json({ 
-      status: "success", 
-      message: "¡Login exitoso!",
-      payload: {
-        first_name: user.first_name,
-        last_name: user.last_name,
-        email: user.email,
-        role: user.role
-      }
+    // Guardamos el token en una cookie llamada 'currentUser'
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.cookie('currentUser', token, {
+      httpOnly: true, // No accesible desde el frontend (document.cookie)
+      sameSite: 'lax',
+      secure: isProduction, // True solo si estamos en producción
+      maxAge: 3600000 // Expira en 1 hora (en milisegundos)
     });
+
+    return res.status(200).json({ status: "success", message: "Login correcto" });
 
   } catch (error) {
     console.error("Error en login:", error);
     return res.status(500).json({ status: "error", message: "Error interno del servidor" });
   }
+};
+
+//  RUTA PROTEGIDA (CURRENT)
+export const currentUser = (req, res) => {
+  // Gracias a nuestro authMiddleware, la info del usuario ya viene limpia en req.user
+  return res.status(200).json({
+    status: "success",
+    payload: req.user
+  });
+};
+
+//  LOGOUT
+export const logoutUser = (req, res) => {
+  // Eliminamos la cookie para cerrar sesión
+  res.clearCookie('currentUser');
+  return res.status(200).json({
+    status: "success",
+    message: "Sesión cerrada"
+  });
 };
